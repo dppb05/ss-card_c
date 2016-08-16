@@ -1,0 +1,14 @@
+number_of_objects(N)
+number_of_labels label_1 label_2 ... label_N
+number_of_matrices(P)
+matrix_file_name_1
+matrix_file_name_2
+...
+matrix_file_name_P
+output_file_name
+number_of_clusters
+number_of_instances
+maximum_iterations
+parameter_epsilon
+parameter_q
+sample_perc
