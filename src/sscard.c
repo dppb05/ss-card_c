@@ -598,8 +598,8 @@ void update_weights() {
             val = 0.0;
             for(i = 0; i < objc; ++i) {
                 for(h = 0; h < objc; ++h) {
-                    val += pow(get(&memb, i, k), mfuz) *
-                        pow(get(&memb, h, k), mfuz) *
+                    val += pow(get(&memb, i, k), 2.0) *
+                        pow(get(&memb, h, k), 2.0) *
                         get(&dmatrix[j], i, h);
                 }
             }
@@ -689,7 +689,11 @@ void update_alpha() {
         }
     }
     printf("num: %lf\nden: %lf\n", sum_num, sum_den);
-    alpha = sum_num / sum_den;
+    if(sum_den) {
+        alpha = sum_num / sum_den;
+    } else {
+        printf("Constraints fully satisfied, alpha unchanged.\n");
+    }
 }
 
 double run() {
