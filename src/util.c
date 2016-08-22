@@ -167,10 +167,13 @@ int cmpint(const void *a, const void *b) {
 //}
 
 int max(int *vec, size_t size) {
-    int ret;
+    if(!size) {
+        return 0;
+    }
+    int ret = vec[0];
     size_t i;
-    for(i = 0; i < size; ++i) {
-        if(!i || vec[i] > ret) {
+    for(i = 1; i < size; ++i) {
+        if(vec[i] > ret) {
             ret = vec[i];
         }
     }

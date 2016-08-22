@@ -13,47 +13,10 @@
 #include "util.h"
 #include "matrix.h"
 #include "stex.h"
+#include "constraint.h"
 
 #define BUFF_SIZE 1024
 #define HEADER_SIZE 51
-
-typedef struct int_vec {
-	int *get;
-	size_t size;
-} int_vec;
-
-void int_vec_init(int_vec *v, size_t size) {
-	v->get = malloc(sizeof(int) * size);
-	v->size = 0;
-}
-
-void int_vec_free(int_vec *v) {
-	free(v->get);
-}
-
-void int_vec_push(int_vec *v, int val) {
-	v->get[v->size++] = val;
-}
-
-typedef struct constraint {
-	int_vec *ml;
-	int_vec *mnl;
-} constraint;
-
-void constraint_init(constraint *c, size_t mlsize, size_t mnlsize) {
-    c->ml = malloc(sizeof(int_vec));
-	int_vec_init(c->ml, mlsize);
-    c->mnl = malloc(sizeof(int_vec));
-	int_vec_init(c->mnl, mnlsize);
-}
-
-void constraint_free(constraint *c) {
-	int_vec_free(c->ml);
-    free(c->ml);
-	int_vec_free(c->mnl);
-    free(c->mnl);
-	free(c);
-}
 
 bool verbose;
 double epsilon;
@@ -818,60 +781,6 @@ void print_sample() {
 	}
 }
 
-void gen_constraints() {
-	constraints = calloc(objc, sizeof(constraint *));
-	size_t i;
-	size_t e;
-	size_t h;
-	size_t k;
-	size_t obj;
-	size_t obj2;
-	for(k = 0; k < classc; ++k) {
-		for(i = 0; i < sample[k].size; ++i) {
-			obj = sample[k].get[i];
-            constraints[obj] = malloc(sizeof(constraint));
-			constraint_init(constraints[obj], sample[k].size,
-							constsc - sample[k].size);
-			for(h = 0; h < classc; ++h) {
-				for(e = 0; e < sample[h].size; ++e) {
-					obj2 = sample[h].get[e];
-					if(obj != obj2) {
-						if(h == k) {
-							int_vec_push(constraints[obj]->ml, obj2);
-						} else {
-							int_vec_push(constraints[obj]->mnl, obj2);
-						}
-					}
-				}
-			}
-		}
-	}
-}
-
-void print_constraints() {
-    printf("Constraints:\n");
-    size_t e;
-    size_t i;
-    size_t k;
-    size_t obj;
-	for(k = 0; k < classc; ++k) {
-		for(i = 0; i < sample[k].size; ++i) {
-			obj = sample[k].get[i];
-            printf("Obj %d:\n", obj);
-            printf("ML:");
-            for(e = 0; e < constraints[obj]->ml->size; ++e) {
-                printf(" %d", constraints[obj]->ml->get[e]);
-            }
-            printf("\n");
-            printf("MNL:");
-            for(e = 0; e < constraints[obj]->mnl->size; ++e) {
-                printf(" %d", constraints[obj]->mnl->get[e]);
-            }
-            printf("\n");
-		}
-	}
-}
-
 void print_class() {
 	size_t i;
 	size_t k;
@@ -1032,8 +941,8 @@ int main(int argc, char **argv) {
     double cur_inst_adeq;
 	gen_sample(sample_perc * objc);
 	print_sample();
-	gen_constraints();
-    print_constraints();
+	constraints = gen_constraints(sample, classc, objc);
+    print_constraints(constraints, objc);
     for(i = 1; i <= insts; ++i) {
         printf("Instance %d:\n", i);
         cur_inst_adeq = run();
