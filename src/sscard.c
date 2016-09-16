@@ -1,9 +1,8 @@
 // TODO:
-//  - handle case where there are no constraints (sample_perc = 0.0)
-//  as it might cause errors (verify)
 //  - use only one object partition group from labels: exclude the
 //  old one copied from SetMedoids-MLMNL-P and adapt the sampling
 //  accordingly
+//  - fix possible div by zero when b-spread occurs
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -30,7 +29,6 @@ int clustc;
 int max_iter;
 st_matrix memb;
 st_matrix *dmatrix;
-st_matrix *global_dmatrix;
 st_matrix *membvec;
 st_matrix dists;
 st_matrix weights;
@@ -40,8 +38,6 @@ int_vec *sample;
 constraint **constraints;
 size_t constsc;
 st_matrix a_val;
-//st_matrix c_val;
-//double *c_val_obj;
 // 'cluster_sum' stores the following for a given cluster 'i':
 // SUM_j=1^N SUM_k=1^N u_ij^2 * u_ik^2 * SUM_s=1^S w_is^q * r_jk^s
 double *cluster_sum; 
@@ -183,29 +179,6 @@ double adequacy() {
     return adeq + alpha * constr_adeq;
 }
 
-void global_dissim() {
-    size_t h;
-    size_t i;
-    size_t j;
-    size_t k;
-    double sum;
-    for(k = 0; k < clustc; ++k) {
-        for(i = 0; i < objc; ++i) {
-            for(h = 0; h < objc; ++h) {
-                sum = 0.0;
-                for(j = 0; j < dmatrixc; ++j) {
-                    sum += pow(get(&weights, k, j), qexp) *
-                        get(&dmatrix[j], i, h);
-                }
-                if(i != h) {
-                    sum += beta;
-                }
-                set(&global_dmatrix[k], i, h, sum);
-            }
-        }
-    }
-}
-
 void compute_membvec() {
     size_t k;
     size_t i;
@@ -337,140 +310,43 @@ void adjust_a_val() {
     }
 }
 
-void update_memb() {
-    size_t c;
-    size_t i;
-    size_t k;
-    double val;
-    int zerovalc;
-    for(i = 0; i < objc; ++i) {
-        zerovalc = 0;
-        for(k = 0; k < clustc; ++k) {
-            if(!(get(&dists, k, i) > 0.0)) {
-                ++zerovalc;
-            }
-        }
-        if(zerovalc) {
-            printf("Msg: there is at least one zero val for d[%d]."
-                    "\n", i);
-            val = 1.0 / ((double) zerovalc);
-            for(k = 0; k < clustc; ++k) {
-                if(get(&dists, k, i) > 0.0) {
-                    set(&memb, i, k, 0.0);
-                } else {
-                    set(&memb, i, k, val);
-                }
-            }
-        } else {
-            for(k = 0; k < clustc; ++k) {
-                val = 0.0;
-                for(c = 0; c < clustc; ++c) {
-                    val += pow(get(&dists, k, i) / get(&dists, c, i),
-                            1.0);
-                }
-                set(&memb, i, k, 1.0 / val);
-            }
-        }
-    }
-}
-
-void constr_update_memb_old() {
-    size_t c;
-    size_t e;
-    size_t h;
-    size_t i;
-    size_t j;
-    size_t k;
-    size_t m;
-    double val;
-    double sumd;
-    double a_val[clustc];
-    double a_val_inv_sum;
-    double c_val[clustc];
-    double c_val_sum;
-    double sum_num1;
-    double sum_num2;
-    double sum_den;
-    double memb_rfcm;
-    double memb_constr;
-    bool normalize;
-    for(i = 0; i < objc; ++i) {
-        sum_num1 = 0.0;
-        sum_num2 = 0.0;
-        sum_den = 0.0;
-        c_val_sum = 0.0;
-        a_val_inv_sum = 0.0;
-        for(k = 0; k < clustc; ++k) {
-            for(h = 0; h < objc; ++h) {
-                for(e = 0; e < objc; ++e) {
-                    sumd = 0.0;
-                    for(j = 0; j < dmatrixc; ++j) {
-                        sumd += pow(get(&weights, k, j), qexp) *
-                            get(&dmatrix[j], i, h);
-                    }
-                    sum_num2 += pow(get(&memb, h, k), 2.0) *
-                        pow(get(&memb, e, k), 2.0) * sumd;
-                }
-                sumd = 0.0;
-                for(j = 0; j < dmatrixc; ++j) {
-                    sumd += pow(get(&weights, k, j), qexp) *
-                        get(&dmatrix[j], i, h);
-                }
-                val = pow(get(&memb, h, k), 2.0);
-                sum_num1 += val * sumd;
-                sum_den += val;
-            }
-            a_val[k] = ((2.0 * sum_num1) / sum_den) -
-                sum_num2 / pow(sum_den, 2.0);
-            c_val[k] = 0.0;
-            if(constraints[i]) {
-                for(m = 0; m < constraints[i]->ml->size; ++m) {
-                    for(c = 0; c < clustc; ++c) {
-                        c_val[k] +=
-                            get(&memb, constraints[i]->ml->get[m], c);
-                    }
-                }
-                for(m = 0; m < constraints[i]->mnl->size; ++m) {
-                    c_val[k] +=
-                        get(&memb, constraints[i]->mnl->get[m], k);
-                }
-            }
-            c_val_sum += c_val[k] / a_val[k];
-            a_val_inv_sum += 1.0 / a_val[k];
-        }
-        c_val_sum /= a_val_inv_sum;
-        normalize = false;
-        sum_den = 0.0;
-        for(k = 0; k < clustc; ++k) {
-            memb_rfcm = 0.0;
-            for(c = 0; c < clustc; ++c) {
-                memb_rfcm += a_val[k] / a_val[c];
-            }
-            memb_rfcm = 1.0 / memb_rfcm;
-            memb_constr = (alpha / a_val[k]) * (c_val_sum - c_val[k]);
-            val = memb_rfcm + memb_constr;
-            if(val < 0.0) {
-                normalize = true;
-                val = 0.0;
-            } else if(val > 1.0) {
-                normalize = true;
-                val = 1.0;
-            } else {
-                sum_den += val;
-            }
-            set(&memb, i, k, val);
-        }
-        if(normalize) {
-            printf("Msg: performing clipping on object %d.\n", i);
-            for(k = 0; k < clustc; ++k) {
-                val = get(&memb, i, k);
-                if(val < 1.0 && val > 0.0) {
-                    set(&memb, i, k, val / sum_den);
-                }
-            }
-        }
-    }
-}
+//void update_memb() {
+//    size_t c;
+//    size_t i;
+//    size_t k;
+//    double val;
+//    int zerovalc;
+//    printf("debug: update_memb start\n");
+//    for(i = 0; i < objc; ++i) {
+//        zerovalc = 0;
+//        for(k = 0; k < clustc; ++k) {
+//            if(deq_(get(&dists, k, i), 0.0)) {
+//                ++zerovalc;
+//            }
+//        }
+//        if(zerovalc) {
+//            printf("Msg: there is at least one zero val for d[%d]."
+//                    "\n", i);
+//            val = 1.0 / ((double) zerovalc);
+//            for(k = 0; k < clustc; ++k) {
+//                if(get(&dists, k, i) > 0.0) {
+//                    set(&memb, i, k, 0.0);
+//                } else {
+//                    set(&memb, i, k, val);
+//                }
+//            }
+//        } else {
+//            for(k = 0; k < clustc; ++k) {
+//                val = 0.0;
+//                for(c = 0; c < clustc; ++c) {
+//                    val += pow(get(&dists, k, i) / get(&dists, c, i),
+//                            1.0);
+//                }
+//                set(&memb, i, k, 1.0 / val);
+//            }
+//        }
+//    }
+//}
 
 void constr_update_memb() {
     size_t c;
@@ -604,29 +480,10 @@ void update_alpha() {
     size_t c;
     size_t h;
     size_t i;
-//    size_t j;
     size_t k;
     double sum_num = 0.0;
-//    double sum_memb;
-//    double sum_obj;
-//    double sumd;
     for(k = 0; k < clustc; ++k) {
         sum_num += cluster_sum[k] / (2.0 * sqd_memb_sum[k]);
-//        sum_obj = 0.0;
-//        sum_memb = 0.0;
-//        for(i = 0; i < objc; ++i) {
-//            for(h = 0; h < objc; ++h) {
-//                sumd = 0.0;
-//                for(j = 0; j < dmatrixc; ++j) {
-//                    sumd += pow(get(&weights, k, j), qexp) *
-//                            get(&dmatrix[j], i, h);
-//                }
-//                sum_obj += pow(get(&memb, i, k), 2.0) *
-//                            pow(get(&memb, h, k), 2.0) * sumd;
-//            }
-//            sum_memb += pow(get(&memb, i, k), 2.0);
-//        }
-//        sum_num += sum_obj / (2 * sum_memb);
     }
     double sum_den = 0.0;
     size_t obj;
@@ -651,7 +508,7 @@ void update_alpha() {
             }
         }
     }
-    printf("num: %lf\nden: %lf\n", sum_num, sum_den);
+//    printf("num: %lf\nden: %lf\n", sum_num, sum_den);
     if(sum_den) {
         alpha = sum_num / sum_den;
     } else {
@@ -679,19 +536,19 @@ double run() {
     do {
         printf("Iteration %d:\n", iter);
         prev_iter_adeq = adeq;
-//        global_dissim();
-//        compute_membvec();
         if(compute_dists()) {
+            compute_membvec();
+            printf("Msg: applying b-spread transform\n");
             do {
                 if(verbose) {
                     printf("Distances:\n");
-                    print_st_matrix(&dists, 10, true);
+                    print_st_matrix(&dists, 20, true);
                 }
             } while(adjust_dists());
         }
         if(verbose) {
             printf("Distances:\n");
-            print_st_matrix(&dists, 10, true);
+            print_st_matrix(&dists, 20, true);
         }
         adjust_a_val();
         update_alpha();
@@ -707,8 +564,8 @@ double run() {
         adeq_diff = prev_iter_adeq - adeq;
         if(adeq_diff < 0.0) {
             adeq_diff = fabs(adeq_diff);
-            printf("Warn: previous iteration adequacy is greater "
-                    "than current (%.15lf).\n", adeq_diff);
+            printf("Warn: current iteration adequacy is greater "
+                    "than previous(%.15lf).\n", adeq_diff);
         }
         if(adeq_diff < epsilon) {
             printf("Adequacy difference threshold reached (%.15lf)."
@@ -886,10 +743,8 @@ int main(int argc, char **argv) {
     init_st_matrix(&best_memb, objc, clustc);
     size_t k;
     membvec = malloc(sizeof(st_matrix) * clustc);
-    global_dmatrix = malloc(sizeof(st_matrix) * clustc);
     for(k = 0; k < clustc; ++k) {
         init_st_matrix(&membvec[k], objc, 1);
-        init_st_matrix(&global_dmatrix[k], objc, objc);
     }
     init_st_matrix(&dists, clustc, objc);
     init_st_matrix(&best_dists, clustc, objc);
@@ -900,8 +755,6 @@ int main(int argc, char **argv) {
         int_vec_init(&class[i], objc);
     }
     init_st_matrix(&a_val, objc, clustc);
-//    init_st_matrix(&c_val, objc, clustc);
-//    c_val_obj = malloc(sizeof(double) * objc);
     cluster_sum = malloc(sizeof(double) * clustc);
     sqd_memb_sum = malloc(sizeof(double) * objc);
 	// Allocating memory end
@@ -1073,10 +926,8 @@ END:
     free_st_matrix(&best_memb);
     for(k = 0; k < clustc; ++k) {
         free_st_matrix(&membvec[k]);
-        free_st_matrix(&global_dmatrix[k]);
     }
     free(membvec);
-    free(global_dmatrix);
     free_st_matrix(&dists);
     free_st_matrix(&best_dists);
     free_st_matrix(&weights);
@@ -1086,8 +937,6 @@ END:
 	}
 	free(class);
     free_st_matrix(&a_val);
-//    free_st_matrix(&c_val);
-//    free(c_val_obj);
     free(cluster_sum);
     free(sqd_memb_sum);
     return 0;

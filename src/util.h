@@ -7,7 +7,7 @@
 
 #include "matrix.h"
 
-#define FPOINT_OFFSET 1e-9
+#define FPOINT_OFFSET 1e-11
 
 bool load_data(char *fname, st_matrix *mtx);
 
