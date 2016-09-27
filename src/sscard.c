@@ -354,6 +354,7 @@ void constr_update_memb() {
     size_t i;
     size_t k;
     size_t obj;
+    size_t zeroc;
     double val;
     double memb_sum;
     double memb_rfcm;
@@ -363,6 +364,23 @@ void constr_update_memb() {
     double a_val_inv_sum;
     bool clip;
     for(i = 0; i < objc; ++i) {
+        zeroc = 0;
+        for(k = 0; k < clustc; ++k) {
+            if(get(&a_val, i, k) <= 0.0) {
+                ++zeroc;
+            }
+        }
+        if(zeroc) {
+//            val = 1.0 / (double) zeroc;
+//            for(k = 0; k < clustc; ++k) {
+//                if(get(&a_val, i, k) <= 0.0) {
+//                    set(&memb, i, k, val);
+//                } else {
+//                    set(&memb, i, k, 0.0);
+//                }
+//            }
+            continue;
+        }
         if(constraints[i]) {
             a_val_inv_sum = 0.0;
             c_val_obj = 0.0;
