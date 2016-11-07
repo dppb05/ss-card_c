@@ -3,6 +3,7 @@
 //  old one copied from SetMedoids-MLMNL-P and adapt the sampling
 //  accordingly
 //  - remove 'gen_sample_' and use 'gen_sample' from 'stex'
+//  - compute mean 'CR' and 'F-measure' among instances
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -669,6 +670,7 @@ void print_class() {
 }
 
 int main(int argc, char **argv) {
+    bool mean_idx = false;
     verbose = false;
     FILE *cfgfile = fopen(argv[1], "r");
     if(!cfgfile) {
@@ -808,6 +810,7 @@ int main(int argc, char **argv) {
     silhouet *avg_csil;
     silhouet *avg_fsil;
     silhouet *avg_ssil;
+    st_matrix *confmtx;
     int *pred;
     st_matrix *groups;
     srand(time(NULL));
@@ -821,45 +824,47 @@ int main(int argc, char **argv) {
     for(i = 1; i <= insts; ++i) {
         printf("Instance %d:\n", i);
         cur_inst_adeq = run();
-        pred = defuz(&memb);
-//        printf("Predicted:\n");
-//        for(j = 0; j < objc; ++j) {
-//            printf("%d ", pred[j]);
-//        }
-//        printf("\n");
-        groups = asgroups(pred, objc, classc);
-        transpose_(&dists_t, &dists);
-        aggregate_dmatrices(&agg_dmatrix, &weights);
-        csil = crispsil(groups, &agg_dmatrix);
-        fsil = fuzzysil(csil, groups, &memb, mfuz);
-        ssil = simplesil(pred, &dists_t);
-        if(i == 1) {
-            avg_partcoef = partcoef(&memb);
-            avg_modpcoef = modpcoef(&memb);
-            avg_partent = partent(&memb);
-            avg_aid = avg_intra_dist(&memb, &dists_t, mfuz);
-            avg_csil = csil;
-            avg_fsil = fsil;
-            avg_ssil = ssil;
-        } else {
-            avg_partcoef = (avg_partcoef + partcoef(&memb)) / 2.0;
-            avg_modpcoef = (avg_modpcoef + modpcoef(&memb)) / 2.0;
-            avg_partent = (avg_partent + partent(&memb)) / 2.0;
-            avg_aid = (avg_aid +
-                        avg_intra_dist(&memb, &dists_t, mfuz)) / 2.0;
-            avg_silhouet(avg_csil, csil);
-            avg_silhouet(avg_fsil, fsil);
-            avg_silhouet(avg_ssil, ssil);
-            free_silhouet(csil);
-            free(csil);
-            free_silhouet(fsil);
-            free(fsil);
-            free_silhouet(ssil);
-            free(ssil);
+        if(mean_idx) {
+            pred = defuz(&memb);
+    //        printf("Predicted:\n");
+    //        for(j = 0; j < objc; ++j) {
+    //            printf("%d ", pred[j]);
+    //        }
+    //        printf("\n");
+            groups = asgroups(pred, objc, classc);
+            transpose_(&dists_t, &dists);
+            aggregate_dmatrices(&agg_dmatrix, &weights);
+            csil = crispsil(groups, &agg_dmatrix);
+            fsil = fuzzysil(csil, groups, &memb, mfuz);
+            ssil = simplesil(pred, &dists_t);
+            if(i == 1) {
+                avg_partcoef = partcoef(&memb);
+                avg_modpcoef = modpcoef(&memb);
+                avg_partent = partent(&memb);
+                avg_aid = avg_intra_dist(&memb, &dists_t, mfuz);
+                avg_csil = csil;
+                avg_fsil = fsil;
+                avg_ssil = ssil;
+            } else {
+                avg_partcoef = (avg_partcoef + partcoef(&memb)) / 2.0;
+                avg_modpcoef = (avg_modpcoef + modpcoef(&memb)) / 2.0;
+                avg_partent = (avg_partent + partent(&memb)) / 2.0;
+                avg_aid = (avg_aid +
+                            avg_intra_dist(&memb, &dists_t, mfuz)) / 2.0;
+                avg_silhouet(avg_csil, csil);
+                avg_silhouet(avg_fsil, fsil);
+                avg_silhouet(avg_ssil, ssil);
+                free_silhouet(csil);
+                free(csil);
+                free_silhouet(fsil);
+                free(fsil);
+                free_silhouet(ssil);
+                free(ssil);
+            }
+            free(pred);
+            free_st_matrix(groups);
+            free(groups);
         }
-        free(pred);
-        free_st_matrix(groups);
-        free(groups);
         if(i == 1 || cur_inst_adeq < best_inst_adeq) {
             mtxcpy(&best_memb, &memb);
             mtxcpy(&best_dists, &dists);
@@ -880,13 +885,18 @@ int main(int argc, char **argv) {
     groups = asgroups(pred, objc, classc);
     print_header("Partitions", HEADER_SIZE);
     print_groups(groups);
+    confmtx = confusion(labels, pred, objc);
+    print_header("Best instance confusion matrix", HEADER_SIZE);
+    print_st_matrix(confmtx, 0, true);
 
-    print_header("Average indexes", HEADER_SIZE);
-    printf("\nPartition coefficient: %.10lf\n", avg_partcoef);
-    printf("Modified partition coefficient: %.10lf\n", avg_modpcoef);
-    printf("Partition entropy: %.10lf (max: %.10lf)\n", avg_partent,
-            log(clustc));
-    printf("Average intra cluster distance: %.10lf\n", avg_aid);
+    if(mean_idx) {
+        print_header("Average indexes", HEADER_SIZE);
+        printf("\nPartition coefficient: %.10lf\n", avg_partcoef);
+        printf("Modified partition coefficient: %.10lf\n", avg_modpcoef);
+        printf("Partition entropy: %.10lf (max: %.10lf)\n", avg_partent,
+                log(clustc));
+        printf("Average intra cluster distance: %.10lf\n", avg_aid);
+    }
 
     transpose_(&dists_t, &best_dists);
     print_header("Best instance indexes", HEADER_SIZE);
@@ -897,13 +907,17 @@ int main(int argc, char **argv) {
             partent(&best_memb), log(clustc));
     printf("Average intra cluster distance: %.10lf\n",
             avg_intra_dist(&best_memb, &dists_t, mfuz));
+    printf("F-measure: %.10lf\n", fmeasure(confmtx, true));
+    printf("CR: %.10lf\n", corand(labels, pred, objc));
 
-    print_header("Averaged crisp silhouette", HEADER_SIZE);
-    print_silhouet(avg_csil);
-    print_header("Averaged fuzzy silhouette", HEADER_SIZE);
-    print_silhouet(avg_fsil);
-    print_header("Averaged simple silhouette", HEADER_SIZE);
-    print_silhouet(avg_ssil);
+    if(mean_idx) {
+        print_header("Averaged crisp silhouette", HEADER_SIZE);
+        print_silhouet(avg_csil);
+        print_header("Averaged fuzzy silhouette", HEADER_SIZE);
+        print_silhouet(avg_fsil);
+        print_header("Averaged simple silhouette", HEADER_SIZE);
+        print_silhouet(avg_ssil);
+    }
 
     aggregate_dmatrices(&agg_dmatrix, &best_weights);
     csil = crispsil(groups, &agg_dmatrix);
@@ -916,12 +930,14 @@ int main(int argc, char **argv) {
     print_header("Best instance simple silhouette", HEADER_SIZE);
     print_silhouet(ssil);
 
-    free_silhouet(avg_csil);
-    free(avg_csil);
-    free_silhouet(avg_fsil);
-    free(avg_fsil);
-    free_silhouet(avg_ssil);
-    free(avg_ssil);
+    if(mean_idx) {
+        free_silhouet(avg_csil);
+        free(avg_csil);
+        free_silhouet(avg_fsil);
+        free(avg_fsil);
+        free_silhouet(avg_ssil);
+        free(avg_ssil);
+    }
     free_silhouet(csil);
     free(csil);
     free_silhouet(fsil);
@@ -933,6 +949,8 @@ int main(int argc, char **argv) {
     free(groups);
     free_st_matrix(&dists_t);
     free_st_matrix(&agg_dmatrix);
+    free_st_matrix(confmtx);
+    free(confmtx);
 	for(i = 0; i < objc; ++i) {
 		if(constraints[i]) {
             constraint_free(constraints[i]);
