@@ -2,7 +2,6 @@
 //  - use only one object partition group from labels: exclude the
 //  old one copied from SetMedoids-MLMNL-P and adapt the sampling
 //  accordingly
-//  - fix possible div by zero when b-spread occurs
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -581,9 +580,9 @@ double run() {
         printf("Adequacy: %.15lf\n", adeq);
         adeq_diff = prev_iter_adeq - adeq;
         if(adeq_diff < 0.0) {
-            adeq_diff = fabs(adeq_diff);
+//            adeq_diff = fabs(adeq_diff);
             printf("Warn: current iteration adequacy is greater "
-                    "than previous(%.15lf).\n", adeq_diff);
+                    "than previous(%.15lf).\n", -adeq_diff);
         }
         if(adeq_diff < epsilon) {
             printf("Adequacy difference threshold reached (%.15lf)."
@@ -648,7 +647,7 @@ void print_sample() {
 	size_t i;
 	size_t k;
 	for(k = 0; k < classc; ++k) {
-		printf("Sample %d (%d members):\n", k, sample[k].size);
+		printf("Class %d (%d members):\n", k, sample[k].size);
 		for(i = 0; i < sample[k].size; ++i) {
 			printf("%u ", sample[k].get[i]);
 		}
@@ -669,7 +668,7 @@ void print_class() {
 }
 
 int main(int argc, char **argv) {
-    verbose = true;
+    verbose = false;
     FILE *cfgfile = fopen(argv[1], "r");
     if(!cfgfile) {
         printf("Error: could not open config file.\n");
@@ -688,6 +687,10 @@ int main(int argc, char **argv) {
     for(i = 0; i < objc; ++i) {
         fscanf(cfgfile, "%d", &labels[i]);
     }
+//    for(i = 0; i < objc; ++i) {
+//        printf("%d ", labels[i]);
+//    }
+    printf("\n");
     // reading labels end
     fscanf(cfgfile, "%d", &dmatrixc);
     if(dmatrixc <= 0) {
@@ -818,6 +821,11 @@ int main(int argc, char **argv) {
         printf("Instance %d:\n", i);
         cur_inst_adeq = run();
         pred = defuz(&memb);
+//        printf("Predicted:\n");
+//        for(j = 0; j < objc; ++j) {
+//            printf("%d ", pred[j]);
+//        }
+//        printf("\n");
         groups = asgroups(pred, objc, classc);
         transpose_(&dists_t, &dists);
         aggregate_dmatrices(&agg_dmatrix, &weights);
