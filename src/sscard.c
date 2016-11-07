@@ -2,6 +2,7 @@
 //  - use only one object partition group from labels: exclude the
 //  old one copied from SetMedoids-MLMNL-P and adapt the sampling
 //  accordingly
+//  - remove 'gen_sample_' and use 'gen_sample' from 'stex'
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -619,7 +620,7 @@ void aggregate_dmatrices(st_matrix *dest, st_matrix *weights) {
     }
 }
 
-void gen_sample(size_t size) {
+void gen_sample_(size_t size) {
 	printf("sample size: %d\n", size);
 	sample = malloc(sizeof(int_vec) * classc);
 	size_t per_class = size / classc;
@@ -690,7 +691,7 @@ int main(int argc, char **argv) {
 //    for(i = 0; i < objc; ++i) {
 //        printf("%d ", labels[i]);
 //    }
-    printf("\n");
+//    printf("\n");
     // reading labels end
     fscanf(cfgfile, "%d", &dmatrixc);
     if(dmatrixc <= 0) {
@@ -813,7 +814,7 @@ int main(int argc, char **argv) {
     size_t best_inst;
     double best_inst_adeq;
     double cur_inst_adeq;
-	gen_sample(sample_perc * objc);
+	gen_sample_(sample_perc * objc);
 	print_sample();
 	constraints = gen_constraints(sample, classc, objc);
     print_constraints(constraints, objc);
