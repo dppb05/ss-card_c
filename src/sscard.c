@@ -743,6 +743,14 @@ int main(int argc, char **argv) {
         fclose(cfgfile);
         return 1;
     }
+    int seed;
+    char seedstr[16];
+    fscanf(cfgfile, "%s", seedstr);
+    if(!strcmp(seedstr, "RAND")) {
+        seed = time(NULL);
+    } else {
+        seed = atoi(seedstr);
+    }
     double sample_perc;
     fscanf(cfgfile, "%lf", &sample_perc);
     if(dlt(sample_perc, 0.0)) {
@@ -757,6 +765,7 @@ int main(int argc, char **argv) {
     printf("Number of instances: %d\n", insts);
     printf("Maximum interations: %d\n", max_iter);
     printf("Parameter q: %lf\n", qexp);
+    printf("Seed: %d\n", seed);
     printf("Sample perc: %lf\n", sample_perc);
     printf("############################\n");
     st_matrix best_memb;
@@ -817,7 +826,7 @@ int main(int argc, char **argv) {
     st_matrix *confmtx;
     int *pred;
     st_matrix *groups;
-    srand(time(NULL));
+    srand(seed);
     size_t best_inst;
     double best_inst_adeq;
     double cur_inst_adeq;
