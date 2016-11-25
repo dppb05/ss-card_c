@@ -909,6 +909,7 @@ int main(int argc, char **argv) {
             avg_intra_dist(&best_memb, &dists_t, mfuz));
     printf("F-measure: %.10lf\n", fmeasure(confmtx, true));
     printf("CR: %.10lf\n", corand(labels, pred, objc));
+    printf("NMI: %.10lf\n", nmi(confmtx));
 
     if(mean_idx) {
         print_header("Averaged crisp silhouette", HEADER_SIZE);
