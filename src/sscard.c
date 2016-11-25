@@ -622,25 +622,29 @@ void aggregate_dmatrices(st_matrix *dest, st_matrix *weights) {
 }
 
 void gen_sample_(size_t size) {
-	printf("sample size: %d\n", size);
+//	printf("sample size: %d\n", size);
 	sample = malloc(sizeof(int_vec) * classc);
 	size_t per_class = size / classc;
 	constsc = per_class * classc;
 	int pos;
+    int val;
+    size_t max;
 	size_t i;
 	size_t k;
 	for(k = 0; k < classc; ++k) {
 		int_vec_init(&sample[k], per_class);
-		bool chosen[class[k].size];
-        for(i = 0; i < class[k].size; ++i) {
-            chosen[i] = false;
+        max = class[k].size;
+		int objs[max];
+        for(i = 0; i < max; ++i) {
+            objs[i] = class[k].get[i];
         }
 		for(i = 0; i < per_class; ++i) {
-			do {
-				pos = rand() % class[k].size;
-			} while(chosen[pos]);
-			chosen[pos] = true;
-			int_vec_push(&sample[k], class[k].get[pos]);
+            pos = rand() % max;
+            val = objs[pos];
+            --max;
+            objs[pos] = objs[max];
+            objs[max] = val;
+			int_vec_push(&sample[k], val);
 		}
 	}
 }
