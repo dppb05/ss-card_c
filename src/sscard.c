@@ -621,24 +621,23 @@ void aggregate_dmatrices(st_matrix *dest, st_matrix *weights) {
     }
 }
 
-void gen_sample_(size_t size) {
-//	printf("sample size: %d\n", size);
+void gen_sample_(double sample_perc) {
 	sample = malloc(sizeof(int_vec) * classc);
-	size_t per_class = size / classc;
-	constsc = per_class * classc;
+    size_t size;
 	int pos;
     int val;
     size_t max;
 	size_t i;
 	size_t k;
 	for(k = 0; k < classc; ++k) {
-		int_vec_init(&sample[k], per_class);
         max = class[k].size;
+        size = max * sample_perc;
+		int_vec_init(&sample[k], size);
 		int objs[max];
         for(i = 0; i < max; ++i) {
             objs[i] = class[k].get[i];
         }
-		for(i = 0; i < per_class; ++i) {
+		for(i = 0; i < size; ++i) {
             pos = rand() % max;
             val = objs[pos];
             --max;
@@ -758,7 +757,7 @@ int main(int argc, char **argv) {
         return 2;
     }
     fclose(cfgfile);
-    freopen(outfilename, "w", stdout);
+//    freopen(outfilename, "w", stdout);
     printf("###Configuration summary:###\n");
     printf("Number of objects: %d\n", objc);
     printf("Number of clusters: %d\n", clustc);
@@ -830,7 +829,7 @@ int main(int argc, char **argv) {
     size_t best_inst;
     double best_inst_adeq;
     double cur_inst_adeq;
-	gen_sample_(sample_perc * objc);
+	gen_sample_(sample_perc);
 	print_sample();
 	constraints = gen_constraints(sample, classc, objc);
     print_constraints(constraints, objc);
