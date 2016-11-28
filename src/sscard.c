@@ -757,7 +757,7 @@ int main(int argc, char **argv) {
         return 2;
     }
     fclose(cfgfile);
-//    freopen(outfilename, "w", stdout);
+    freopen(outfilename, "w", stdout);
     printf("###Configuration summary:###\n");
     printf("Number of objects: %d\n", objc);
     printf("Number of clusters: %d\n", clustc);
