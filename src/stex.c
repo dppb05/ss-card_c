@@ -19,6 +19,10 @@ void remap(int *labels, size_t size, int *factors) {
     }
 }
 
+//void norm_labels(int *labels, size_t size) {
+//    size_t classc = 0;
+//}
+
 // Defuzzifies fuzzy matrix 'fuzmtx' by using the first
 // maxima method.
 // Params:
@@ -31,6 +35,10 @@ int* defuz(st_matrix *fuzmtx) {
     size_t j;
     double maxval;
     double val;
+    int sizes[fuzmtx->ncol];
+    for(j = 0; j < fuzmtx->ncol; ++j) {
+        sizes[j] = 0;
+    }
     int *labels = malloc(sizeof(int) * fuzmtx->nrow);
     for(i = 0; i < fuzmtx->nrow; ++i) {
         maxval = get(fuzmtx, i, 0);
@@ -42,6 +50,19 @@ int* defuz(st_matrix *fuzmtx) {
                 labels[i] = j;
             }
         }
+        sizes[labels[i]]++;
+    }
+    int label_map[fuzmtx->ncol];
+    int cur = 0;
+    for(j = 0; j < fuzmtx->ncol; ++j) {
+        if(sizes[j]) {
+            label_map[j] = cur++;
+        } else {
+            label_map[j] = -1;
+        }
+    }
+    for(i = 0; i < fuzmtx->nrow; ++i) {
+        labels[i] = label_map[labels[i]];
     }
     return labels;
 }
@@ -129,7 +150,7 @@ double nmi(st_matrix *confmtx) {
     size_t last_col = clustc;
     size_t last_row = classc;
     size_t objc = get(confmtx, last_row, last_col);
-    double logck = 1.0 / log(classc * clustc);
+//    double logck = 1.0 / log(classc * clustc);
     double res = 0.0;
     size_t c;
     size_t k;
@@ -499,16 +520,35 @@ int** gen_sample(st_matrix *groups, double sample_perc) {
 //  the object that belongs to that group. Matrix dimension is
 //  'groupc' by ('size' + 1)
 st_matrix* asgroups(int *labels, size_t size, size_t groupc) {
-    st_matrix *groups = malloc(sizeof(st_matrix));
-    init_st_matrix(groups, groupc, size + 1);
+    int group_card[groupc];
     int i;
     for(i = 0; i < groupc; ++i) {
-        set(groups, i, 0, 0.0);
+        group_card[i] = 0;
     }
     int label;
+    for(i = 0; i < size; ++i) {
+        label = labels[i];
+        group_card[label]++;
+    }
+    int new_groupc = 0;
+    int group_map[groupc];
+//    for(i = 0; i < groupc; ++i) {
+//        if(group_card[i]) {
+//            group_map[i] = new_groupc++;
+//        } else {
+//            group_map[i] = -1;
+//        }
+//    }
+    new_groupc = groupc;
+    st_matrix *groups = malloc(sizeof(st_matrix));
+    init_st_matrix(groups, new_groupc, size + 1);
+    for(i = 0; i < new_groupc; ++i) {
+        set(groups, i, 0, 0.0);
+    }
     int elemc;
     for(i = 0; i < size; ++i) {
         label = labels[i];
+//        label = group_map[labels[i]];
         elemc = get(groups, label, 0) + 1;
         set(groups, label, elemc, i);
         set(groups, label, 0, elemc);
