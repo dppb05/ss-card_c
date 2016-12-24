@@ -19,9 +19,9 @@ void remap(int *labels, size_t size, int *factors) {
     }
 }
 
-//void norm_labels(int *labels, size_t size) {
-//    size_t classc = 0;
-//}
+void norm_labels(int *labels, size_t size) {
+    size_t classc = 0;
+}
 
 // Defuzzifies fuzzy matrix 'fuzmtx' by using the first
 // maxima method.
@@ -159,25 +159,30 @@ double nmi(st_matrix *confmtx) {
         for(k = 0; k < clustc; ++k) {
             val = 0.0;
             if(get(confmtx, c, k) != 0.0) {
-                val = (get(confmtx, c, k) / objc) *
-                        (log((get(confmtx, c, k) * objc) /
-                            (get(confmtx, c, last_col) *
-                                get(confmtx, last_row, k))
-                            ));
+                val = (get(confmtx, c, last_col) *
+                        get(confmtx, last_row, k));
+                if(!deq(val, 0.0)) {
+                    val = (get(confmtx, c, k) / objc) *
+                        (log((get(confmtx, c, k) * objc) / val));
+                }
                 res += val;
             }
         }
     }
     double kent = 0.0;
     for(k = 0; k < clustc; ++k) {
-        val = get(confmtx, last_row, k) / objc;
-        kent += val * log(val);
+        val = get(confmtx, last_row, k) / (double) objc;
+        if(!deq(val, 0.0)) {
+            kent += val * log(val);
+        }
     }
     kent *= -1.0;
     double cent = 0.0;
     for(c = 0; c < classc; ++c) {
-        val = get(confmtx, c, last_col) / objc;
-        cent += val * log(val);
+        val = get(confmtx, c, last_col) / (double) objc;
+        if(!deq(val, 0.0)) {
+            cent += val * log(val);
+        }
     }
     cent *= -1.0;
     return res / ((kent + cent) / 2.0);
