@@ -836,13 +836,10 @@ int main(int argc, char **argv) {
     for(i = 1; i <= insts; ++i) {
         printf("Instance %d:\n", i);
         cur_inst_adeq = run();
+        print_weights(&weights);
+        print_memb(&memb);
         if(mean_idx) {
             pred = defuz(&memb);
-    //        printf("Predicted:\n");
-    //        for(j = 0; j < objc; ++j) {
-    //            printf("%d ", pred[j]);
-    //        }
-    //        printf("\n");
             groups = asgroups(pred, objc, classc);
             transpose_(&dists_t, &dists);
             aggregate_dmatrices(&agg_dmatrix, &weights);
