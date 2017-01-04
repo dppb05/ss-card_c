@@ -451,7 +451,7 @@ void update_weights() {
     int zeroc;
     for(k = 0; k < clustc; ++k) {
         zeroc = 0;
-        printf("Dispersions:\n");
+//        printf("Dispersions:\n");
         for(j = 0; j < dmatrixc; ++j) {
             val = 0.0;
             for(i = 0; i < objc; ++i) {
@@ -465,12 +465,12 @@ void update_weights() {
                 ++zeroc;
             }
             dispersion[j] = val;
-            printf("%.15lf ", val);
+//            printf("%.15lf ", val);
         }
-        printf("\n");
+//        printf("\n");
         if(zeroc) {
-            printf("Msg: at least one dispersion is zero for cluster"
-                    " %d\n", k);
+//            printf("Msg: at least one dispersion is zero for cluster"
+//                    " %d\n", k);
             val = 1.0 / zeroc;
             for(j = 0; j < dmatrixc; ++j) {
                 if(!dispersion[j]) {
