@@ -223,50 +223,50 @@ void mtxcpy_size_t(size_t **destination, size_t **source, size_t nrow,
     }
 }
 
-bool dump_r_data(const char *filename, double **memb,
-        double **weights, double best_adeq) {
-    FILE *outfile = fopen(filename, "w");
-    if(!outfile) {
-        return false;
-    }
-    size_t i;
-    size_t j;
-    size_t k;
-    fprintf(outfile, "mvfcmv_model <- list(\n");
-    // membership matrix start
-    fprintf(outfile, "fuzzyMatrix = matrix(c(\n");
-    size_t last = objc - 1;
-    for(i = 0; i < last; ++i) {
-        fprintf(outfile, "\t");
-        for(k = 0; k < clustc; ++k) {
-            fprintf(outfile, "%.10lf,", memb[i][k]);
-        }
-        fprintf(outfile, "\n");
-    }
-    fprintf(outfile, "\t");
-    last = clustc - 1;
-    for(k = 0; k < last; ++k) {
-        fprintf(outfile, "%.10lf,", memb[i][k]);
-    }
-    fprintf(outfile, "%.10lf\n),%d,%d),\n", memb[i][k], objc, clustc);
-    // weight matrix start
-    fprintf(outfile, "weightMatrix = matrix(c(\n");
-    for(k = 0; k < last; ++k) {
-        fprintf(outfile, "\t");
-        for(j = 0; j < dmatrixc; ++j) {
-            fprintf(outfile, "%.10lf,", weights[k][j]);
-        }
-        fprintf(outfile, "\n");
-    }
-    fprintf(outfile, "\t");
-    last = dmatrixc - 1;
-    for(j = 0; j < last; ++j) {
-        fprintf(outfile, "%.10lf,", weights[k][j]);
-    }
-    fprintf(outfile, "%.10lf\n),%d,%d),\n", weights[k][j], clustc,
-            dmatrixc);
-    // adequacy start
-    fprintf(outfile, "adequacy = %.10lf)", best_adeq);
-    return true;
-}
+//bool dump_r_data(const char *filename, double **memb,
+//        double **weights, double best_adeq) {
+//    FILE *outfile = fopen(filename, "w");
+//    if(!outfile) {
+//        return false;
+//    }
+//    size_t i;
+//    size_t j;
+//    size_t k;
+//    fprintf(outfile, "mvfcmv_model <- list(\n");
+//    // membership matrix start
+//    fprintf(outfile, "fuzzyMatrix = matrix(c(\n");
+//    size_t last = objc - 1;
+//    for(i = 0; i < last; ++i) {
+//        fprintf(outfile, "\t");
+//        for(k = 0; k < clustc; ++k) {
+//            fprintf(outfile, "%.10lf,", memb[i][k]);
+//        }
+//        fprintf(outfile, "\n");
+//    }
+//    fprintf(outfile, "\t");
+//    last = clustc - 1;
+//    for(k = 0; k < last; ++k) {
+//        fprintf(outfile, "%.10lf,", memb[i][k]);
+//    }
+//    fprintf(outfile, "%.10lf\n),%d,%d),\n", memb[i][k], objc, clustc);
+//    // weight matrix start
+//    fprintf(outfile, "weightMatrix = matrix(c(\n");
+//    for(k = 0; k < last; ++k) {
+//        fprintf(outfile, "\t");
+//        for(j = 0; j < dmatrixc; ++j) {
+//            fprintf(outfile, "%.10lf,", weights[k][j]);
+//        }
+//        fprintf(outfile, "\n");
+//    }
+//    fprintf(outfile, "\t");
+//    last = dmatrixc - 1;
+//    for(j = 0; j < last; ++j) {
+//        fprintf(outfile, "%.10lf,", weights[k][j]);
+//    }
+//    fprintf(outfile, "%.10lf\n),%d,%d),\n", weights[k][j], clustc,
+//            dmatrixc);
+//    // adequacy start
+//    fprintf(outfile, "adequacy = %.10lf)", best_adeq);
+//    return true;
+//}
 
