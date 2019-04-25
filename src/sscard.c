@@ -751,11 +751,17 @@ int main(int argc, char **argv) {
     } else {
         seed = atoi(seedstr);
     }
+    char constr_str[BUFF_SIZE];
+    fscanf(cfgfile, "%s", constr_str);
     double sample_perc;
-    fscanf(cfgfile, "%lf", &sample_perc);
-    if(dlt(sample_perc, 0.0)) {
-        printf("Error: sample_perc < 0.\n");
-        return 2;
+    FILE *constr_file = fopen(constr_str, "r");
+    if(!constr_file) {
+      printf("Constraint does not seem to be a file, assuming float.\n");
+      sample_perc = atof(constr_str);
+      if(dlt(sample_perc, 0.0) || dgt(sample_perc, 1.0)) {
+          printf("Error: sample_perc outside [0,1].\n");
+          return 2;
+      }
     }
     fclose(cfgfile);
     freopen(outfilename, "w", stdout);
@@ -832,9 +838,14 @@ int main(int argc, char **argv) {
     size_t best_inst;
     double best_inst_adeq;
     double cur_inst_adeq;
-	gen_sample_(sample_perc);
-	print_sample();
-	constraints = gen_constraints(sample, classc, objc);
+  if(constr_file) {
+    constraints = read_constr(constr_file, labels, classc, objc);
+    fclose(constr_file);
+  } else {
+    gen_sample_(sample_perc);
+    print_sample();
+    constraints = gen_constraints(sample, classc, objc);
+  }
     print_constraints(constraints, objc);
     for(i = 1; i <= insts; ++i) {
         printf("Instance %d:\n", i);

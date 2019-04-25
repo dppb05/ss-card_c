@@ -42,6 +42,55 @@ void constraint_free(constraint *c) {
 	free(c);
 }
 
+constraint** read_constr(FILE *infile, int *labels, size_t classc,
+    size_t objc) {
+  int chosenc;
+  if(fscanf(infile, "%d", &chosenc) == EOF) {
+    return NULL;
+  }
+  int_vec chosen;
+  int_vec_init(&chosen, chosenc);
+  int obj;
+  int i;
+  for(i = 0; i < chosenc; ++i) {
+    if(fscanf(infile, "%d", &obj) == EOF) {
+      int_vec_free(&chosen);
+      return NULL;
+    }
+    int_vec_push(&chosen, obj);
+  }
+  return as_constraints(&chosen, labels, classc, objc);
+}
+
+constraint** as_constraints(int_vec *chosen, int *labels,
+    size_t classc, size_t objc) {
+  int i;
+  int k;
+  int obj;
+  int obj2;
+	constraint **constraints = calloc(objc, sizeof(constraint *));
+  constraint *constr;
+  for(i = 0; i < chosen->size, ++i) {
+    obj = chosen->get[i];
+    constraints[obj] = malloc(sizeof(constraint));
+    constr = constraints[obj];
+    constraint_init(constr, objc, objc);
+    k = labels[obj];
+    for(h = 0; h < chosen->size; ++h) {
+      if(h != i) {
+        obj2 = chosen->get[h];
+        if(labels[obj2] == k) {
+          int_vec_push(constr->ml, obj2);
+        } else {
+          int_vec_push(constr->mnl, obj2);
+        }
+      }
+    }
+    qsort(constr->ml->get, constr->ml->size, sizeof(int), cmpint);
+    qsort(constr->mnl->get, constr->mnl->size, sizeof(int), cmpint);
+  }
+}
+
 constraint** gen_constraints(int_vec *sample, size_t classc,
         size_t objc) {
 	constraint **constraints = calloc(objc, sizeof(constraint *));

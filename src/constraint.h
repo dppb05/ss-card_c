@@ -25,6 +25,12 @@ void constraint_init(constraint *c, size_t mlsize, size_t mnlsize);
 
 void constraint_free(constraint *c);
 
+constraint** read_constr(FILE *infile, int *labels, size_t classc,
+    size_t objc);
+
+constraint** as_constraints(int_vec *chosen, int *labels,
+    size_t classc, size_t objc);
+
 constraint** gen_constraints(int_vec *sample, size_t classc,
         size_t objc);
 
