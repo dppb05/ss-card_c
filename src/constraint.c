@@ -59,18 +59,21 @@ constraint** read_constr(FILE *infile, int *labels, size_t classc,
     }
     int_vec_push(&chosen, obj);
   }
-  return as_constraints(&chosen, labels, classc, objc);
+  constraint** constr = as_constraints(&chosen, labels, classc, objc);
+  int_vec_free(&chosen);
+  return constr;
 }
 
 constraint** as_constraints(int_vec *chosen, int *labels,
     size_t classc, size_t objc) {
   int i;
+  int h;
   int k;
   int obj;
   int obj2;
 	constraint **constraints = calloc(objc, sizeof(constraint *));
   constraint *constr;
-  for(i = 0; i < chosen->size, ++i) {
+  for(i = 0; i < chosen->size; ++i) {
     obj = chosen->get[i];
     constraints[obj] = malloc(sizeof(constraint));
     constr = constraints[obj];
@@ -89,6 +92,7 @@ constraint** as_constraints(int_vec *chosen, int *labels,
     qsort(constr->ml->get, constr->ml->size, sizeof(int), cmpint);
     qsort(constr->mnl->get, constr->mnl->size, sizeof(int), cmpint);
   }
+  return constraints;
 }
 
 constraint** gen_constraints(int_vec *sample, size_t classc,

@@ -753,7 +753,7 @@ int main(int argc, char **argv) {
     }
     char constr_str[BUFF_SIZE];
     fscanf(cfgfile, "%s", constr_str);
-    double sample_perc;
+    double sample_perc = 0.0;
     FILE *constr_file = fopen(constr_str, "r");
     if(!constr_file) {
       printf("Constraint does not seem to be a file, assuming float.\n");
@@ -764,7 +764,7 @@ int main(int argc, char **argv) {
       }
     }
     fclose(cfgfile);
-    freopen(outfilename, "w", stdout);
+//    freopen(outfilename, "w", stdout);
     printf("###Configuration summary:###\n");
     printf("Number of objects: %d\n", objc);
     printf("Number of clusters: %d\n", clustc);
@@ -989,9 +989,11 @@ int main(int argc, char **argv) {
         }
 	}
     free(constraints);
-	for(i = 0; i < classc; ++i) {
-		int_vec_free(&sample[i]);
-	}
+  if(sample) {
+    for(i = 0; i < classc; ++i) {
+      int_vec_free(&sample[i]);
+    }
+  }
 	free(sample);
 END:
     fclose(stdout);
