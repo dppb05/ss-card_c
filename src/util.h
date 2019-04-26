@@ -47,7 +47,6 @@ void mtxcpy_d(double **destination, double **source, size_t nrow,
 void mtxcpy_size_t(size_t **destination, size_t **source, size_t nrow,
         size_t ncol);
 
-//bool dump_r_data(const char *filename, double **memb,
-//            double **weights, double best_adeq);
+void replace_ext(char *filename, const char *ext);
 
 #endif /* _UTIL_H_ */

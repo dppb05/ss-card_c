@@ -672,6 +672,54 @@ void print_class() {
 	}
 }
 
+bool dump_r_data(const char *filename, st_matrix *memb,
+        st_matrix *weights, double alpha, double best_adeq) {
+    FILE *outfile = fopen(filename, "w");
+    if(!outfile) {
+        return false;
+    }
+    size_t i;
+    size_t j;
+    size_t k;
+    fprintf(outfile, "mvfcmv_model <- list(\n");
+    // membership matrix start
+    fprintf(outfile, "fuzzyMatrix = matrix(c(\n");
+    size_t last = objc - 1;
+    for(i = 0; i < last; ++i) {
+        fprintf(outfile, "\t");
+        for(k = 0; k < clustc; ++k) {
+            fprintf(outfile, "%.10lf,", get(memb, i, k));
+        }
+        fprintf(outfile, "\n");
+    }
+    fprintf(outfile, "\t");
+    last = clustc - 1;
+    for(k = 0; k < last; ++k) {
+        fprintf(outfile, "%.10lf,", get(memb, i, k));
+    }
+    fprintf(outfile, "%.10lf\n),%d,%d),\n", get(memb, i, k), objc, clustc);
+    // weight matrix start
+    fprintf(outfile, "weightMatrix = matrix(c(\n");
+    for(k = 0; k < last; ++k) {
+        fprintf(outfile, "\t");
+        for(j = 0; j < dmatrixc; ++j) {
+            fprintf(outfile, "%.10lf,", get(weights, k, j));
+        }
+        fprintf(outfile, "\n");
+    }
+    fprintf(outfile, "\t");
+    last = dmatrixc - 1;
+    for(j = 0; j < last; ++j) {
+        fprintf(outfile, "%.10lf,", get(weights, k, j));
+    }
+    fprintf(outfile, "%.10lf\n),%d,%d),\n", get(weights, k, j), clustc,
+            dmatrixc);
+    // adequacy start
+    fprintf(outfile, "adequacy = %.10lf,", best_adeq);
+    fprintf(outfile, "alpha = %.10lf)", alpha);
+    return true;
+}
+
 int main(int argc, char **argv) {
     bool mean_idx = false;
     bool comp_idx = false;
@@ -764,7 +812,7 @@ int main(int argc, char **argv) {
       }
     }
     fclose(cfgfile);
-//    freopen(outfilename, "w", stdout);
+    freopen(outfilename, "w", stdout);
     printf("###Configuration summary:###\n");
     printf("Number of objects: %d\n", objc);
     printf("Number of clusters: %d\n", clustc);
@@ -902,7 +950,11 @@ int main(int argc, char **argv) {
     printf("\n");
     print_memb(&best_memb);
     print_weights(&best_weights);
-
+  // dumps the best config as an R script. Uses the output file name
+  // as base
+  replace_ext(outfilename, "R");
+  dump_r_data(outfilename, &best_memb, &best_weights, alpha,
+      best_inst_adeq);
     if(comp_idx) {
         pred = defuz(&best_memb);
         // TODO: use 'asgroups' to make the constraints
