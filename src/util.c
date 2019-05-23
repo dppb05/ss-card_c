@@ -125,6 +125,16 @@ bool dlt(double a, double b) {
     return a < (b - FPOINT_OFFSET);
 }
 
+int cmp(double a, double b) {
+  if(fabs(a - b) <=
+      fmax(FPOINT_OFFSET * fmax(fabs(a), fabs(b)), 0.0)) {
+    return 0;
+  } else if(a < b) {
+    return -1;
+  }
+  return 1;
+}
+
 int cmpint(const void *a, const void *b) {
     return ( *(int*)a - *(int*)b );
 }

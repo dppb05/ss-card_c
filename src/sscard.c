@@ -527,8 +527,10 @@ void update_alpha() {
             }
         }
     }
-//    printf("num: %lf\nden: %lf\n", sum_num, sum_den);
-    if(sum_den) {
+    obj = cmp(sum_den, 0.0);
+//    printf("num: %.20lf\nden: %.20lf\ncmp: %d\n", sum_num, sum_den, obj);
+    if(sum_den > FPOINT_OFFSET) {
+//    if(dgt(sum_den, 0.0)) {
         alpha = sum_num / sum_den;
     } else {
         printf("Constraints fully satisfied, alpha unchanged.\n");
@@ -723,7 +725,7 @@ bool dump_r_data(const char *filename, st_matrix *memb,
 int main(int argc, char **argv) {
     bool mean_idx = false;
     bool comp_idx = false;
-    verbose = false;
+    verbose = true;
     FILE *cfgfile = fopen(argv[1], "r");
     if(!cfgfile) {
         printf("Error: could not open config file.\n");
