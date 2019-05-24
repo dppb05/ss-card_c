@@ -699,7 +699,7 @@ bool dump_r_data(const char *filename, st_matrix *memb,
     for(k = 0; k < last; ++k) {
         fprintf(outfile, "%.10lf,", get(memb, i, k));
     }
-    fprintf(outfile, "%.10lf\n),%d,%d),\n", get(memb, i, k), objc, clustc);
+    fprintf(outfile, "%.10lf\n),%d,%d,byrow=TRUE),\n", get(memb, i, k), objc, clustc);
     // weight matrix start
     fprintf(outfile, "weightMatrix = matrix(c(\n");
     for(k = 0; k < last; ++k) {
@@ -714,7 +714,7 @@ bool dump_r_data(const char *filename, st_matrix *memb,
     for(j = 0; j < last; ++j) {
         fprintf(outfile, "%.10lf,", get(weights, k, j));
     }
-    fprintf(outfile, "%.10lf\n),%d,%d),\n", get(weights, k, j), clustc,
+    fprintf(outfile, "%.10lf\n),%d,%d,byrow=TRUE),\n", get(weights, k, j), clustc,
             dmatrixc);
     // adequacy start
     fprintf(outfile, "adequacy = %.10lf,", best_adeq);
