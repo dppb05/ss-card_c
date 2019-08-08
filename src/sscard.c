@@ -30,6 +30,7 @@ int clustc;
 int max_iter;
 st_matrix memb;
 st_matrix *dmatrix;
+st_matrix *global_dmatrix;
 st_matrix *membvec;
 st_matrix dists;
 st_matrix weights;
@@ -180,6 +181,29 @@ double adequacy() {
     return adeq + alpha * constr_adeq;
 }
 
+void global_dissim() {
+    size_t h;
+    size_t i;
+    size_t j;
+    size_t k;
+    double sum;
+    for(k = 0; k < clustc; ++k) {
+        for(i = 0; i < objc; ++i) {
+            for(h = 0; h < objc; ++h) {
+                sum = 0.0;
+                for(j = 0; j < dmatrixc; ++j) {
+                    sum += pow(get(&weights, k, j), qexp) *
+                        get(&dmatrix[j], i, h);
+                }
+                if(i != h) {
+                    sum += beta;
+                }
+                set(&global_dmatrix[k], i, h, sum);
+            }
+        }
+    }
+}
+
 void compute_membvec() {
     size_t k;
     size_t i;
@@ -199,6 +223,39 @@ void compute_membvec() {
 }
 
 bool compute_dists() {
+    size_t i;
+    size_t k;
+    st_matrix membvec_trans;
+    init_st_matrix(&membvec_trans, 1, objc);
+    st_matrix aux_mtx;
+    init_st_matrix(&aux_mtx, 1, objc);
+    st_matrix aux_mtx2;
+    init_st_matrix(&aux_mtx2, 1, 1);
+    st_matrix term1;
+    init_st_matrix(&term1, objc, 1);
+    double term2;
+    bool hasneg = false;
+    for(k = 0; k < clustc; ++k) {
+        transpose_(&membvec_trans, &membvec[k]);
+        mtxmult_(&aux_mtx, &membvec_trans, &global_dmatrix[k]);
+        mtxmult_(&aux_mtx2, &aux_mtx, &membvec[k]);
+        term2 = get(&aux_mtx2, 0, 0) * 0.5;
+        mtxmult_(&term1, &global_dmatrix[k], &membvec[k]);
+        for(i = 0; i < objc; ++i) {
+            set(&dists, k, i, get(&term1, i, 0) - term2);
+            if(!hasneg && get(&dists, k, i) < 0.0) {
+                hasneg = true;
+            }
+        }
+    }
+    free_st_matrix(&membvec_trans);
+    free_st_matrix(&aux_mtx);
+    free_st_matrix(&aux_mtx2);
+    free_st_matrix(&term1);
+    return hasneg;
+}
+
+bool compute_dists_old() {
     size_t h;
     size_t i;
     size_t j;
@@ -499,12 +556,30 @@ void update_alpha() {
     size_t c;
     size_t h;
     size_t i;
+    size_t j;
     size_t k;
+    double sumw;
     double sum_num = 0.0;
-    for(k = 0; k < clustc; ++k) {
-        sum_num += cluster_sum[k] / (2.0 * sqd_memb_sum[k]);
-    }
     double sum_den = 0.0;
+    for(i = 0; i < objc; ++i) {
+        sum_den += pow(get(&memb, i, k), 2.0);
+    }
+    sum_den *= 2.0;
+    for(k = 0; k < clustc; ++k) {
+        for(i = 0; i < objc; ++i) {
+            for(h = 0; h < objc; ++h) {
+                sumw = 0.0;
+                for(j = 0; j < dmatrixc; ++j) {
+                    sumw += pow(get(&weights, k, j), qexp) *
+                        get(&dmatrix[j], i, h);
+                }
+                sum_num += pow(get(&memb, i, k), 2.0) *
+                    pow(get(&memb, h, k), 2.0) * sumw;
+            }
+        }
+    }
+    sum_num /= sum_den;
+    sum_den = 0.0;
     size_t obj;
     for(i = 0; i < objc; ++i) {
         if(constraints[i]) {
@@ -543,7 +618,7 @@ double run() {
     if(verbose) print_memb(&memb);
     init_weights();
     if(verbose) print_weights(&weights);
-    compute_dists(); // pre-compute 'cluster_sum' and 'sqd_memb_sum'
+//    compute_dists(); // pre-compute 'cluster_sum' and 'sqd_memb_sum'
     update_alpha();
     printf("Alpha: %.10f\n", alpha);
     beta = 0.0;
@@ -557,8 +632,9 @@ double run() {
     do {
         printf("Iteration %d:\n", iter);
         prev_iter_adeq = adeq;
+        global_dissim();
+        compute_membvec();
         if(compute_dists()) {
-            compute_membvec();
             printf("Msg: applying b-spread transform\n");
             do {
                 if(verbose) {
@@ -725,7 +801,7 @@ bool dump_r_data(const char *filename, st_matrix *memb,
 int main(int argc, char **argv) {
     bool mean_idx = false;
     bool comp_idx = false;
-    verbose = true;
+    verbose = false;
     FILE *cfgfile = fopen(argv[1], "r");
     if(!cfgfile) {
         printf("Error: could not open config file.\n");
@@ -836,8 +912,10 @@ int main(int argc, char **argv) {
     init_st_matrix(&best_memb, objc, clustc);
     size_t k;
     membvec = malloc(sizeof(st_matrix) * clustc);
+    global_dmatrix = malloc(sizeof(st_matrix) * clustc);
     for(k = 0; k < clustc; ++k) {
         init_st_matrix(&membvec[k], objc, 1);
+        init_st_matrix(&global_dmatrix[k], objc, objc);
     }
     init_st_matrix(&dists, clustc, objc);
     init_st_matrix(&best_dists, clustc, objc);
