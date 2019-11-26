@@ -316,7 +316,7 @@ double compute_deltabeta() {
     for(i = 0; i < objc; ++i) {
         idcol[i] = 1.0;
         for(k = 0; k < clustc; ++k) {
-            val = pow(euclid_dist(membvec[k].mtx, idcol, objc), 2.0);
+            val = sqdeuclid_dist(membvec[k].mtx, idcol, objc);
             if(val != 0.0) {
                 val = (-2.0 * get(&dists, k, i)) / val;
                 if(first || val > deltabeta) {
@@ -627,8 +627,8 @@ double run() {
     double prev_iter_adeq;
     double adeq_diff;
     size_t iter = 1;
-    st_matrix prev_memb;
-    init_st_matrix(&prev_memb, objc, clustc);
+    // st_matrix prev_memb;
+    // init_st_matrix(&prev_memb, objc, clustc);
     do {
         printf("Iteration %d:\n", iter);
         prev_iter_adeq = adeq;
@@ -650,7 +650,7 @@ double run() {
         adjust_a_val();
         update_alpha();
         printf("Alpha: %.10f\n", alpha);
-        mtxcpy(&prev_memb, &memb);
+        // mtxcpy(&prev_memb, &memb);
         constr_update_memb();
 //        update_memb();
         if(verbose) print_memb(&memb);
@@ -674,7 +674,7 @@ double run() {
             break;
         }
     } while(true);
-    free_st_matrix(&prev_memb);
+    // free_st_matrix(&prev_memb);
     printf("Beta: %.15lf\n", beta);
     return adeq;
 }
