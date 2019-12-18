@@ -896,6 +896,7 @@ int main(int argc, char **argv) {
     char constr_str[BUFF_SIZE];
     fscanf(cfgfile, "%s", constr_str);
     double sample_perc = 0.0;
+    char **constr_file_names = NULL;
     FILE *constr_file = fopen(constr_str, "r");
     if(!constr_file) {
       printf("Constraint does not seem to be a file, assuming float.\n");
@@ -903,6 +904,17 @@ int main(int argc, char **argv) {
       if(dlt(sample_perc, 0.0) || dgt(sample_perc, 1.0)) {
           printf("Error: sample_perc outside [0,1].\n");
           return 2;
+      }
+    } else {
+      fclose(constr_file);
+      constr_file_names = malloc(sizeof(char*) * insts);
+      for(i = 0; i < insts; ++i) {
+        if(i == 0) {
+          constr_file_names[i] = constr_str;
+        } else {
+          constr_file_names[i] = malloc(sizeof(char) * BUFF_SIZE);
+          fscanf(cfgfile, "%s", constr_file_names[i]);
+        }
       }
     }
     fclose(cfgfile);
@@ -915,6 +927,12 @@ int main(int argc, char **argv) {
     printf("Parameter q: %lf\n", qexp);
     printf("Seed: %d\n", seed);
     printf("Sample perc: %lf\n", sample_perc);
+    if(constr_file_names) {
+      printf("Constraint files:\n");
+      for(i = 0; i < insts; ++i) {
+        printf("%s\n", constr_file_names[i]);
+      }
+    }
     printf("############################\n");
     st_matrix best_memb;
     st_matrix best_dists;
@@ -982,16 +1000,21 @@ int main(int argc, char **argv) {
     size_t best_inst;
     double best_inst_adeq;
     double cur_inst_adeq;
-  if(constr_file) {
-    constraints = read_constr(constr_file, labels, classc, objc);
-    fclose(constr_file);
-  } else {
+  if(!constr_file) {
     gen_sample_(sample_perc);
     print_sample();
     constraints = gen_constraints(sample, classc, objc);
-  }
     print_constraints(constraints, objc);
+  }
     for(i = 1; i <= insts; ++i) {
+        if(constr_file_names) {
+          printf("Opening %s\n", constr_file_names[i-1]);
+          constr_file = fopen(constr_file_names[i-1], "r");
+          constraints = read_constr(constr_file, labels,
+            classc, objc);
+          print_constraints(constraints, objc);
+          fclose(constr_file);
+        }
         printf("Instance %d:\n", i);
         cur_inst_adeq = run();
         print_weights(&weights);
@@ -1038,6 +1061,15 @@ int main(int argc, char **argv) {
             mtxcpy(&best_weights, &weights);
             best_inst_adeq = cur_inst_adeq;
             best_inst = i;
+        }
+        if(constr_file_names) {
+          for(j = 0; j < objc; ++j) {
+            if(constraints[j]) {
+              constraint_free(constraints[j]);
+            }
+          }
+          free(constraints);
+          constraints = NULL;
         }
     }
 	printf("\n");
@@ -1131,12 +1163,14 @@ int main(int argc, char **argv) {
         free_st_matrix(confmtx);
         free(confmtx);
     }
-	for(i = 0; i < objc; ++i) {
-		if(constraints[i]) {
-            constraint_free(constraints[i]);
-        }
-	}
+  if(constraints) {
+    for(i = 0; i < objc; ++i) {
+      if(constraints[i]) {
+        constraint_free(constraints[i]);
+      }
+    }
     free(constraints);
+  }
   if(sample) {
     for(i = 0; i < classc; ++i) {
       int_vec_free(&sample[i]);
@@ -1145,6 +1179,13 @@ int main(int argc, char **argv) {
 	free(sample);
 END:
     fclose(stdout);
+  if(constr_file_names) {
+    // the first one does not need to be freed
+    for(i = 1; i < insts; ++i) {
+      free(constr_file_names[i]);
+    }
+    free(constr_file_names);
+  }
     for(j = 0; j < dmatrixc; ++j) {
         free_st_matrix(&dmatrix[j]);
     }
