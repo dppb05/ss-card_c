@@ -792,6 +792,22 @@ bool dump_r_data(const char *filename, st_matrix *memb,
     }
     fprintf(outfile, "%.10lf\n),%d,%d,byrow=TRUE),\n", get(weights, k, j), clustc,
             dmatrixc);
+    // dist matrix start
+    fprintf(outfile, "dists = matrix(c(\n");
+    last = objc - 1;
+    for(i = 0; i < last; ++i) {
+        fprintf(outfile, "\t");
+        for(k = 0; k < clustc; ++k) {
+            fprintf(outfile, "%.10lf,", get(&dists, k, i));
+        }
+        fprintf(outfile, "\n");
+    }
+    fprintf(outfile, "\t");
+    last = clustc - 1;
+    for(k = 0; k < last; ++k) {
+        fprintf(outfile, "%.10lf,", get(&dists, k, i));
+    }
+    fprintf(outfile, "%.10lf\n),%d,%d,byrow=TRUE),\n", get(&dists, k, i), objc, clustc);
     // adequacy start
     fprintf(outfile, "adequacy = %.10lf,", best_adeq);
     fprintf(outfile, "alpha = %.10lf)", alpha);
