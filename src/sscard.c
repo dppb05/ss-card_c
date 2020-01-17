@@ -9,6 +9,7 @@
 #include <math.h>
 #include <time.h>
 #include <stdbool.h>
+#include <string.h>
 
 #include "util.h"
 #include "matrix.h"
@@ -817,6 +818,9 @@ bool dump_r_data(const char *filename, st_matrix *memb,
 int main(int argc, char **argv) {
     bool mean_idx = false;
     bool comp_idx = false;
+    // If true, dumps the R data for each instance; otherwise only
+    // the the best instance is dumped.
+    bool dump_r_inst = true;
     verbose = false;
     FILE *cfgfile = fopen(argv[1], "r");
     if(!cfgfile) {
@@ -1006,10 +1010,12 @@ int main(int argc, char **argv) {
     constraints = gen_constraints(sample, classc, objc);
     print_constraints(constraints, objc);
   }
+  char r_file_name[BUFF_SIZE];
     for(i = 1; i <= insts; ++i) {
+      char *cntr_file_name = constr_file_names[i-1];
         if(constr_file_names) {
-          printf("Opening %s\n", constr_file_names[i-1]);
-          constr_file = fopen(constr_file_names[i-1], "r");
+          printf("Opening %s\n", cntr_file_name);
+          constr_file = fopen(cntr_file_name, "r");
           constraints = read_constr(constr_file, labels,
             classc, objc);
           print_constraints(constraints, objc);
@@ -1017,8 +1023,15 @@ int main(int argc, char **argv) {
         }
         printf("Instance %d:\n", i);
         cur_inst_adeq = run();
-        print_weights(&weights);
-        print_memb(&memb);
+        if(dump_r_inst) {
+          strcpy(r_file_name, cntr_file_name); 
+          replace_ext(r_file_name, "R");
+          dump_r_data(r_file_name, &memb, &weights, alpha,
+            cur_inst_adeq);
+        } else {
+          print_weights(&weights);
+          print_memb(&memb);
+        }
         if(mean_idx) {
             pred = defuz(&memb);
             groups = asgroups(pred, objc, classc);
@@ -1080,9 +1093,11 @@ int main(int argc, char **argv) {
     print_weights(&best_weights);
   // dumps the best config as an R script. Uses the output file name
   // as base
-  replace_ext(outfilename, "R");
-  dump_r_data(outfilename, &best_memb, &best_weights, alpha,
-      best_inst_adeq);
+  if(!dump_r_inst) {
+    replace_ext(outfilename, "R");
+    dump_r_data(outfilename, &best_memb, &best_weights, alpha,
+        best_inst_adeq);
+  }
     if(comp_idx) {
         pred = defuz(&best_memb);
         // TODO: use 'asgroups' to make the constraints
