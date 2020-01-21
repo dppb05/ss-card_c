@@ -240,3 +240,11 @@ void replace_ext(char *filename, const char *ext) {
     strcat(filename, ext);
   }
 }
+
+void replace_ext_(char *filename, const char *ext) {
+  char *pos = strrchr(filename, '.'); 
+  if(pos != NULL) {
+    pos[0] = '\0';
+    strcat(filename, ext);
+  }
+}

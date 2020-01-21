@@ -51,4 +51,6 @@ void mtxcpy_size_t(size_t **destination, size_t **source, size_t nrow,
 
 void replace_ext(char *filename, const char *ext);
 
+void replace_ext_(char *filename, const char *ext);
+
 #endif /* _UTIL_H_ */

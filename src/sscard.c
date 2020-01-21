@@ -1024,8 +1024,11 @@ int main(int argc, char **argv) {
         printf("Instance %d:\n", i);
         cur_inst_adeq = run();
         if(dump_r_inst) {
-          strcpy(r_file_name, cntr_file_name); 
-          replace_ext(r_file_name, "R");
+          char ext[BUFF_SIZE];
+          sprintf(ext, "%02d.R", i);
+          strcpy(r_file_name, outfilename); 
+          replace_ext(r_file_name, ext);
+          printf("Writing to %s\n", r_file_name);
           dump_r_data(r_file_name, &memb, &weights, alpha,
             cur_inst_adeq);
         } else {
