@@ -812,6 +812,7 @@ bool dump_r_data(const char *filename, st_matrix *memb,
     // adequacy start
     fprintf(outfile, "adequacy = %.10lf,", best_adeq);
     fprintf(outfile, "alpha = %.10lf)", alpha);
+    fclose(outfile);
     return true;
 }
 
@@ -1029,8 +1030,10 @@ int main(int argc, char **argv) {
           strcpy(r_file_name, outfilename); 
           replace_ext(r_file_name, ext);
           printf("Writing to %s\n", r_file_name);
-          dump_r_data(r_file_name, &memb, &weights, alpha,
-            cur_inst_adeq);
+          if(!dump_r_data(r_file_name, &memb, &weights, alpha,
+            cur_inst_adeq)) {
+            printf("Warn: Problem when dumping the data to the R file");
+          }
         } else {
           print_weights(&weights);
           print_memb(&memb);
